@@ -3,6 +3,7 @@ module ExtDriver.Handlers
 open System
 open FsToolkit.ErrorHandling
 open CommandLine
+open Microsoft.FSharp.Collections
 open Spectre.Console
 open ExtDriver.Disks
 
@@ -21,23 +22,37 @@ type MountAction =
 let driveAction (action: MountAction) (args: BaseMountArguments) =
     let allPartitions = fetchExternalPartitions ()
 
+    let execAction (part: PartitionEntry) =
+        match action with
+        | Mount -> part.Mount()
+        | Unmount -> part.Unmount()
+    
+    let suitablePartitions  =
+        allPartitions
+        |> List.filter (fun x ->
+            match action with
+            | Mount -> x.Mountpoint.IsNone
+            | Unmount -> x.Mountpoint.IsSome)
+
     result {
         let! parts =
             match args.All with
-            | true -> Ok(allPartitions |> List.toSeq)
+            | true -> Ok(suitablePartitions)
             | false ->
-                args.Devices
-                |> Seq.traverseResultM (fun x ->
-                    allPartitions
-                    |> List.tryFind (fun p -> p.name = x.Trim())
-                    |> Option.toResult $"Drive \"{x}\" not found")
+                match Seq.toList args.Devices with
+                | [] ->
+                    match suitablePartitions with
+                    | [] -> Result.Error "No suitable external drives found"
+                    | [ drive ] -> Ok [ drive ]
+                    | _ -> Result.Error "Ambiguous command: more than one available disk"
+                | devices ->
+                    devices
+                    |> List.traverseResultM (fun x ->
+                        suitablePartitions
+                        |> List.tryFind (fun p -> p.name = x.Trim())
+                        |> Option.toResult $"Drive \"{x}\" not found or already mounted/unmounted")
 
-        let! _ =
-            parts
-            |> Seq.traverseResultM (fun x ->
-                match action with
-                | Mount -> x.Mount()
-                | Unmount -> x.Unmount())
+        let! _ = parts |> List.traverseResultM execAction
 
         return ()
     }

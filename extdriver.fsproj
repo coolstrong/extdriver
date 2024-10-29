@@ -7,20 +7,20 @@
     </PropertyGroup>
 
     <ItemGroup>
-      <Compile Include="Utils.fs" />
-      <Compile Include="Disks.fs" />
-      <Compile Include="Handlers.fs" />
-      <Compile Include="Program.fs" />
+        <Compile Include="Utils.fs"/>
+        <Compile Include="Disks.fs"/>
+        <Compile Include="Handlers.fs"/>
+        <Compile Include="Program.fs"/>
     </ItemGroup>
 
     <ItemGroup>
-      <PackageReference Include="CommandLineParser" Version="2.9.1" />
-      <PackageReference Include="Fli" Version="1.111.10" />
-      <PackageReference Include="FSharp.Json" Version="0.4.1" />
-      <PackageReference Include="FsToolkit.ErrorHandling" Version="4.18.0" />
-      <PackageReference Include="Spectre.Console" Version="0.49.1" />
-      <PackageReference Include="Spectre.Console.Cli" Version="0.49.1" />
-      <PackageReference Include="Spectre.Console.Json" Version="0.49.1" />
+        <PackageReference Include="CommandLineParser" Version="2.9.1"/>
+        <PackageReference Include="Fli" Version="1.111.10"/>
+        <PackageReference Include="FSharp.Json" Version="0.4.1"/>
+        <PackageReference Include="FsToolkit.ErrorHandling" Version="4.18.0"/>
+        <PackageReference Include="Spectre.Console" Version="0.49.1"/>
+        <PackageReference Include="Spectre.Console.Cli" Version="0.49.1"/>
+        <PackageReference Include="Spectre.Console.Json" Version="0.49.1"/>
     </ItemGroup>
 
 </Project>

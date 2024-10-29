@@ -1,19 +1,19 @@
 module ExtDriver.Program
 
-open System
 open CommandLine
 open ExtDriver.Handlers
+open Spectre.Console
 
 
-[<Verb("mount", HelpText = "Mount external drive.")>]
+[<Verb("mount", aliases = [| "m" |], HelpText = "Mount external drive.")>]
 type MountArguments() =
     inherit BaseMountArguments()
 
-[<Verb("unmount", HelpText = "Unmount external drive.")>]
+[<Verb("unmount", aliases = [| "u"; "un" |], HelpText = "Unmount external drive.")>]
 type UnmountArguments() =
     inherit BaseMountArguments()
 
-[<Verb("list", IsDefault = true, HelpText = "list all external drives.")>]
+[<Verb("list", isDefault = true, aliases = [| "l"; "ls" |], HelpText = "list all external drives.")>]
 type ListArguments() =
     [<Option('s', "simple", HelpText = "Output in simple format (no decorations).")>]
     member val Simple = false with get, set
@@ -21,18 +21,24 @@ type ListArguments() =
 
 [<EntryPoint>]
 let main args =
+    // let parser = new Parser(fun s -> s.AutoVersion <- false)
+
+    let parsedArgs =
+        Parser.Default.ParseArguments<ListArguments, MountArguments, UnmountArguments> args
+
     let result =
-        Parser.Default.ParseArguments<MountArguments, UnmountArguments, ListArguments> args
+        match parsedArgs with
+        | :? Parsed<obj> as cmd ->
+            match cmd.Value with
+            | :? ListArguments as args -> Ok(printDrives (if args.Simple then Simple else Decorated))
+            | :? MountArguments as args -> driveAction Mount args
+            | :? UnmountArguments as args -> driveAction Unmount args
+            | _ -> failwith "Unexpected verb encountered"
+
+        | _ -> Result.Error ""
 
     match result with
-    | :? Parsed<obj> as cmd ->
-        match cmd.Value with
-        | :? ListArguments as args ->
-            printDrives (if args.Simple then Simple else Decorated)
-            0
-        | :? MountArguments as args ->
-            Console.WriteLine (String.Join(", ", args.Devices))
-            0
-        | _ -> 0
-
-    | _ -> 1
+    | Error e ->
+        AnsiConsole.MarkupLine $"[red]{e}[/]"
+        1
+    | Ok _ -> 0
