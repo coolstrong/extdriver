@@ -19,8 +19,8 @@ type MountAction =
     | Mount
     | Unmount
 
-let driveAction (action: MountAction) (args: BaseMountArguments) =
-    let allPartitions = fetchExternalPartitions ()
+let driveAction (action: MountAction) (args: BaseMountArguments) = result {
+    let! allPartitions = fetchExternalPartitions ()
 
     let execAction (part: PartitionEntry) =
         match action with
@@ -29,40 +29,39 @@ let driveAction (action: MountAction) (args: BaseMountArguments) =
     
     let suitablePartitions  =
         allPartitions
-        |> List.filter (fun x ->
+        |> List.filter (
             match action with
-            | Mount -> x.Mountpoint.IsNone
-            | Unmount -> x.Mountpoint.IsSome)
+            | Mount -> _.Mountpoint.IsNone
+            | Unmount -> _.Mountpoint.IsSome)
+    
+    let! targetPartitions =
+        match args.All with
+        | true -> Ok(suitablePartitions)
+        | false ->
+            match Seq.toList args.Devices with
+            | [] ->
+                match suitablePartitions with
+                | [] -> Result.Error "No suitable external drives found"
+                | [ drive ] -> Ok [ drive ]
+                | _ -> Result.Error "Ambiguous command: more than one available disk"
+            | devices ->
+                devices
+                |> List.traverseResultM (fun x ->
+                    suitablePartitions
+                    |> List.tryFind (fun p -> p.name = x.Trim())
+                    |> Option.toResult $"Drive \"{x}\" not found or already mounted/unmounted")
 
-    result {
-        let! parts =
-            match args.All with
-            | true -> Ok(suitablePartitions)
-            | false ->
-                match Seq.toList args.Devices with
-                | [] ->
-                    match suitablePartitions with
-                    | [] -> Result.Error "No suitable external drives found"
-                    | [ drive ] -> Ok [ drive ]
-                    | _ -> Result.Error "Ambiguous command: more than one available disk"
-                | devices ->
-                    devices
-                    |> List.traverseResultM (fun x ->
-                        suitablePartitions
-                        |> List.tryFind (fun p -> p.name = x.Trim())
-                        |> Option.toResult $"Drive \"{x}\" not found or already mounted/unmounted")
+    let! _ = targetPartitions |> List.traverseResultM execAction
 
-        let! _ = parts |> List.traverseResultM execAction
-
-        return ()
-    }
+    return ()
+}
 
 type PrintFormat =
     | Decorated
     | Simple
 
-let printDrives (format: PrintFormat) =
-    let partitions = fetchExternalPartitions ()
+let printDrives (format: PrintFormat) = result {
+    let! partitions = fetchExternalPartitions ()
 
     match format with
     | Simple ->
@@ -94,3 +93,4 @@ let printDrives (format: PrintFormat) =
             )
 
         AnsiConsole.Write table
+}

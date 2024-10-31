@@ -21,8 +21,6 @@ type ListArguments() =
 
 [<EntryPoint>]
 let main args =
-    // let parser = new Parser(fun s -> s.AutoVersion <- false)
-
     let parsedArgs =
         Parser.Default.ParseArguments<ListArguments, MountArguments, UnmountArguments> args
 
@@ -30,7 +28,7 @@ let main args =
         match parsedArgs with
         | :? Parsed<obj> as cmd ->
             match cmd.Value with
-            | :? ListArguments as args -> Ok(printDrives (if args.Simple then Simple else Decorated))
+            | :? ListArguments as args -> printDrives (if args.Simple then Simple else Decorated)
             | :? MountArguments as args -> driveAction Mount args
             | :? UnmountArguments as args -> driveAction Unmount args
             | _ -> failwith "Unexpected verb encountered"

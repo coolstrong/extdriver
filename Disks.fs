@@ -32,11 +32,9 @@ type DiskEntry =
 type _LsblkJson = { blockdevices: DiskEntry list }
 
 let fetchExternalDrives () =
-    exec "lsblk -f --json"
-    |> Option.get
-    |> Json.deserialize<_LsblkJson>
-    |> _.blockdevices
-    |> List.filter _.IsExternal
+    execResult "lsblk -f --json"
+    |> Result.mapError (fun _ -> "lsblk cannot be executed")
+    |> Result.map (Json.deserialize<_LsblkJson> >> _.blockdevices >> List.filter _.IsExternal)
 
-let fetchExternalPartitions () =
-    fetchExternalDrives () |> List.collect _.children
+let fetchExternalPartitions =
+    fetchExternalDrives >> Result.map (List.collect _.children)
