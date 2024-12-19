@@ -31,9 +31,9 @@ let main args =
             | :? ListArguments as args -> printDrives (if args.Simple then Simple else Decorated)
             | :? MountArguments as args -> driveAction Mount args
             | :? UnmountArguments as args -> driveAction Unmount args
-            | _ -> failwith "Unexpected verb encountered"
+            | _ -> Result.Error "Unexpected verb encountered"
 
-        | _ -> Result.Error ""
+        | _ -> Result.Error "Could not parse cli arguments"
 
     match result with
     | Error e ->

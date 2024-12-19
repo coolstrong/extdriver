@@ -7,7 +7,7 @@ let tap f x =
     ignore (f x)
     x
 
-let always x = fun () -> x
+let always x = fun _ -> x
 
 module Option =
     let toResult errValue option =
